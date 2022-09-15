@@ -1,0 +1,22 @@
+mybatis:
+  configuration:
+    call-setters-on-nulls: true
+spring:
+  datasource:
+    hikari:
+      auto-commit: true
+      connection-test-query: SELECT 1
+      connection-timeout: 30000
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      maximum-pool-size: 15
+      minimum-idle: 5
+      pool-name: DatebookHikariCP
+    type: com.zaxxer.hikari.HikariDataSource
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  mvc:
+    view:
+      prefix: /
+      suffix: .html

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="Cache" content="no-cache">
+    <title>DBQuery-Online</title>
+    <link rel="shortcut icon" href="#"/>
+    <link rel="stylesheet" href="https://www.layuicdn.com/layui-v2.5.6/css/layui.css"/>
+    <script src="https://cdn.bootcss.com/qs/6.7.0/qs.min.js"></script>
+    <script src="https://unpkg.zhimg.com/axios/dist/axios.min.js"></script>
+    <style>
+        #editor {
+            position: relative;
+            background: #ffffff;
+            box-shadow: 0 1px 16px silver;
+            z-index: 2;
+        }
+
+        .ace_hidden-cursors {
+            opacity: 0
+        }
+
+        .layui-nav-child {
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">DBQuery-Online</div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item" id="username"></li>
+        </ul>
+    </div>
+
+    <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree">
+                <li class="layui-nav-item layui-nav-itemed">
+                    <a>线下环境</a>
+                    <dl class="layui-nav-child">
+                        <dd class="layui-this envTab" envVal="0" id="env0">
+                            <a href="javascript:">DB0</a>
+                        </dd>
+                        <dd class="envTab" envVal="2" id="env2">
+                            <a href="javascript:">DB2</a>
+                        </dd>
+                        <dd class="envTab" envVal="3" id="env3">
+                            <a href="javascript:">
+                                自定义数据源
+                                <span style="margin-left: 50px;font-size: 10px" class="layui-badge">new</span>
+                            </a>
+                        </dd>
+                    </dl>
+                </li>
+                <li class="layui-nav-item layui-nav-itemed">
+                    <a>线上环境</a>
+                    <dl class="layui-nav-child">
+                        <dd class="envTab" envVal="1" id="env1">
+                            <a href="javascript:">DB1</a>
+                        </dd>
+                    </dl>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <textarea id="copyArea" style="display: none"></textarea>
+    <div class="layui-body">
+        <div style="padding: 15px;">
+            <div class="layui-select-title">
+                <div id="editor" style="height: 350px; width: 100%"></div>
+                <i class="layui-edge"></i>
+            </div>
+            <form class="layui-form" action="">
+                <button type="button" class="layui-btn" id="execute">Execute</button>
+                <button type="button" class="layui-btn layui-btn-warm" id="formatSql">Format Sql</button>
+                <button type="button" class="layui-btn layui-btn-danger" id="clearAll">Clear All</button>
+                <button type="button" class="layui-btn" id="executeAll" style="display: none">在所有分片执行</button>
+                <button type="button" class="layui-btn" id="insertToOffline" style="display: none">
+                    将结果集导入线下环境
+                </button>
+                <button type="button" class="layui-btn layui-btn-danger" id="resetConn" style="display: none">
+                    重置连接
+                </button>
+                <div class="layui-inline" style="margin-left: 50px;display: none" id="tableNo">
+                    <div class="layui-input-inline">
+                        <input id="userId" type="number" value="1" placeholder="userId" autocomplete="off"
+                               class="layui-input">
+                    </div>
+                    <span class="layui-badge" id="tbno">分表数：1</span>
+                </div>
+                <div class="layui-input-inline" style="float: right">
+                    <button type="button" class="layui-btn" id="downloadAll" style="display: none">全分片下载</button>
+                    <button type="button" class="layui-btn layui-btn-normal" id="download">Download</button>
+                </div>
+            </form>
+
+            <div style="overflow: scroll">
+                <table class="layui-table" lay-skin="line" id="resultTable"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://www.layuicdn.com/layui-v2.5.6/layui.all.js"></script>
+<script src="assets/js/ace/ace.js"></script>
+<script src="assets/js/ace/ext-beautify.js"></script>
+<script src="assets/js/index.js"></script>
+<script>
+    history.pushState(null, null, document.URL);
+    window.addEventListener('popstate', function () {
+        history.pushState(null, null, document.URL);
+    });
+    let beautify = ace.require("ace/ext/beautify");
+    let editor = ace.edit("editor");
+    editor.setTheme("ace/theme/chrome");
+    editor.renderer.setShowGutter(false);
+    editor.renderer.setShowPrintMargin(false);
+    editor.renderer.setPadding(20);
+    editor.renderer.setScrollMargin(8, 8, 0, 0);
+    editor.setHighlightActiveLine(false);
+    editor.getSession().setUseWrapMode(true);
+    editor.getSession().setMode("ace/mode/mysql");
+    editor.setFontSize(15);
+
+    const env = {
+        db0: "0",
+        db1: "1",
+        db2: "2",
+        customDb: "3",
+    }
+    localStorage.env = env.db0;
+    if (localStorage["saveSql" + localStorage.env]) {
+        editor.setValue(localStorage["saveSql" + localStorage.env], 1);
+    } else {
+        editor.setValue("select * from FC_ES.planinfo;\n" +
+            "-- 一次只能执行一个SQL，请选中sql后再点击Execute（先执行USE，再执行查询语句，不能一起执行）。若为单行SQL可不用选中，将光标放在要执行SQL的行尾后点击Execute即会执行当前行SQL。", 1);
+    }
+    let refreshLocalStorage = function () {
+        let envTabs = document.getElementsByClassName('envTab');
+        for (let envTab of envTabs) {
+            if (envTab.classList.contains("layui-this")) {
+                localStorage.env = envTab.getAttribute("envval");
+                break;
+            }
+        }
+    }
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === "visible") {
+            refreshLocalStorage();
+        }
+    });
+    setInterval(function () {
+        if (localStorage.env && localStorage["saveSql" + localStorage.env] !== editor.getValue()) {
+            if (document.visibilityState === "visible") {
+                localStorage["saveSql" + localStorage.env] = editor.getValue();
+            }
+        }
+    }, 3000)
+</script>
+</body>
+</html>
