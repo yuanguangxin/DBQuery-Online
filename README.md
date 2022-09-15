@@ -24,7 +24,7 @@
 
 ![Untitled](DBQuery-Online%20ea01e0ac6b334cfa9e5267ec0cfe1408/Untitled%202.png)
 
-## 交互特性
+## Interactive
 
 1、为保护DB，select 语句如不含 limit，默认返回limit 100，如需更多返回结果可在SQL中自行指定limit。
 
@@ -46,7 +46,7 @@
 
 ![Untitled](DBQuery-Online%20ea01e0ac6b334cfa9e5267ec0cfe1408/Untitled%205.png)
 
-## 项目结构与配置
+## Structure
 
 ![Untitled](DBQuery-Online%20ea01e0ac6b334cfa9e5267ec0cfe1408/Untitled%206.png)
 
