@@ -14,6 +14,8 @@
 
 ![Untitled](DBQuery-Online%20ea01e0ac6b334cfa9e5267ec0cfe1408/Untitled.jpeg)
 
+**注：点击执行等操作时：请用光标选中SQL后执行，一次只能执行一条SQL。**
+
 ### 集群使用
 
 ![Untitled](DBQuery-Online%20ea01e0ac6b334cfa9e5267ec0cfe1408/Untitled%201.png)
